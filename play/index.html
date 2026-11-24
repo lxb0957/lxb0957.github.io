@@ -576,10 +576,11 @@ frameborder="1"
     if (statusEl) statusEl.textContent = msg;     // 装载页万一没挂上，还有这行兜底
   }
 
-  // 画面真的出来了才退场：pygbag 的 canvas 一开始就存在，但 width 是 1
+  // 画面真的出来了才退场：pygbag 的 canvas 一开始就存在，但 width 是 1。
+  // 再多留 0.9 秒 —— width 刚变时主菜单往往还没画完，慢机器上会闪一下黑屏。
   var watch = setInterval(function () {
     var c = document.querySelector('canvas');
-    if (c && c.width > 1) { clearInterval(watch); leave(); }
+    if (c && c.width > 1) { clearInterval(watch); setTimeout(leave, 900); }
   }, 400);
   setTimeout(function () { clearInterval(watch); leave(); }, 120000);   // 兜底，别永久挡住
 
