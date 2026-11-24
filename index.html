@@ -273,6 +273,31 @@
     if (navigator.clipboard) navigator.clipboard.writeText(txt).then(done, function () { prompt('复制这个链接：', txt); });
     else prompt('复制这个链接：', txt);
   });
+
+  /* 点之前就开始下 —— 用户在落地页看介绍的这几秒，够把 11 MB 运行时下掉一半，
+     点进去时那部分直接命中 HTTP 缓存（服务端给了 max-age=600），不再是干等。
+     必须用 mode:'no-cors'：pygbag 自己就是这么取的（见 FETCH_FLAGS），
+     模式一致才能命中同一份缓存条目。 */
+  var warmed = false;
+  function warm() {
+    if (warmed) return;
+    warmed = true;
+    var q = location.search || '';   // 工作台那条入口按 URL 上的 sharecode 放行
+    ['cdn/0.9.3/cpython312/main.wasm',          // gzip 后 4.6 MB
+     'cdn/0.9.3/cpython312/main.data',          // 6.4 MB，标准库
+     // 轮子版本跟随 pygbag，升级时要一起改；404 只是白跑一个请求，不影响游戏
+     'cdn/0.9.3/cp312/pygame_ce-2.5.7-cp312-cp312-wasm32_bi_emscripten.whl'
+    ].forEach(function (u) {
+      fetch(u + q, { mode: 'no-cors', credentials: 'same-origin' }).catch(function () {});
+    });
+  }
+  var playBtn = document.getElementById('play');
+  if (playBtn) {
+    ['mouseenter', 'focus', 'touchstart'].forEach(function (ev) {
+      playBtn.addEventListener(ev, warm, { once: true, passive: true });
+    });
+  }
+  setTimeout(warm, 6000);   // 停留超过 6 秒说明真在看，也预取
 })();
 </script>
 
